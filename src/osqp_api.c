@@ -537,6 +537,7 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
     OSQPInt*        Ared_p = (OSQPInt *)c_malloc((n + 1) * sizeof(OSQPInt));
     OSQPCscMatrix*  Ared_csc = OSQPCscMatrix_new(2 * m, n, 2 * nnzA,
                                                  Ared_x, Ared_i, Ared_p);
+    if (Ared_csc) Ared_csc->owned = 1;
 
     work->pol->A_to_Alow_elem = (OSQPInt *)c_malloc(nnzA * sizeof(OSQPInt));
     work->pol->A_to_Aupp_elem = (OSQPInt *)c_malloc(nnzA * sizeof(OSQPInt));
