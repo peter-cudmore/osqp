@@ -133,8 +133,8 @@ static OSQPInt update_polish_solver_direct(OSQPSolver* solver) {
   }
 
   return plsh->update_matrices(plsh,
-                               work->data->P, OSQP_NULL, 0,
-                               work->pol->Ared, OSQP_NULL, 0);
+                               work->data->P, OSQP_NULL, OSQPMatrix_get_nz(work->data->P),
+                               work->pol->Ared, OSQP_NULL, OSQPMatrix_get_nz(work->pol->Ared));
 }
 
 static OSQPInt copy_direct_linsys_solution(LinSysSolver* plsh, OSQPVectorf* dst) {
