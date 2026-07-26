@@ -212,21 +212,54 @@ c_int osqp_setup(OSQPWorkspace** workp, const OSQPData *data, const OSQPSettings
     return osqp_error(exitflag);
   }
 
-  // Initialize active constraints structure
-  work->pol = c_malloc(sizeof(OSQPPolish));
+  // Initialize active constraints structure and fixed polish workspace
+  work->pol = c_calloc(1, sizeof(OSQPPolish));
   if (!(work->pol)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
-  work->pol->Alow_to_A = c_malloc(data->m * sizeof(c_int));
-  work->pol->Aupp_to_A = c_malloc(data->m * sizeof(c_int));
-  work->pol->A_to_Alow = c_malloc(data->m * sizeof(c_int));
-  work->pol->A_to_Aupp = c_malloc(data->m * sizeof(c_int));
-  work->pol->x         = c_malloc(data->n * sizeof(c_float));
-  work->pol->z         = c_malloc(data->m * sizeof(c_float));
-  work->pol->y         = c_malloc(data->m * sizeof(c_float));
-  if (!(work->pol->x)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
-  if ( data->m && (!(work->pol->Alow_to_A) || !(work->pol->Aupp_to_A) ||
-      !(work->pol->A_to_Alow) || !(work->pol->A_to_Aupp) ||
-      !(work->pol->z) || !(work->pol->y)) )
+  work->pol->Alow_to_A    = c_malloc(data->m * sizeof(c_int));
+  work->pol->Aupp_to_A    = c_malloc(data->m * sizeof(c_int));
+  work->pol->A_to_Alow    = c_malloc(data->m * sizeof(c_int));
+  work->pol->A_to_Aupp    = c_malloc(data->m * sizeof(c_int));
+  work->pol->A_to_Alow_elem = c_malloc(data->A->p[data->A->n] * sizeof(c_int));
+  work->pol->A_to_Aupp_elem = c_malloc(data->A->p[data->A->n] * sizeof(c_int));
+  work->pol->x            = c_malloc(data->n * sizeof(c_float));
+  work->pol->z            = c_malloc(data->m * sizeof(c_float));
+  work->pol->y            = c_malloc(data->m * sizeof(c_float));
+  work->pol->rhs_red      = c_malloc((data->n + 2 * data->m) * sizeof(c_float));
+  work->pol->rhs          = c_malloc((data->n + 2 * data->m) * sizeof(c_float));
+  work->pol->pol_sol      = c_malloc((data->n + 2 * data->m) * sizeof(c_float));
+  work->pol->rho_vec      = c_malloc((2 * data->m) * sizeof(c_float));
+  work->pol->Ared         = csc_spalloc(2 * data->m, data->n, 2 * data->A->p[data->A->n], 1, 0);
+  if (!(work->pol->x) || !(work->pol->rhs_red) || !(work->pol->rhs) ||
+      !(work->pol->pol_sol) || !(work->pol->Ared))
     return osqp_error(OSQP_MEM_ALLOC_ERROR);
+  if (data->m && (!(work->pol->Alow_to_A) || !(work->pol->Aupp_to_A) ||
+      !(work->pol->A_to_Alow) || !(work->pol->A_to_Aupp) ||
+      !(work->pol->z) || !(work->pol->y) || !(work->pol->rho_vec)))
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
+  if (data->A->p[data->A->n] && (!(work->pol->A_to_Alow_elem) || !(work->pol->A_to_Aupp_elem)))
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
+  work->pol->delta = work->settings->delta;
+  vec_set_scalar(work->pol->Ared->x, 0., 2 * data->A->p[data->A->n]);
+  vec_set_scalar(work->pol->rho_vec, 1. / work->pol->delta, 2 * data->m);
+  {
+    c_int j, ptr, Ared_nnz = 0;
+    for (j = 0; j < data->n; j++) {
+      work->pol->Ared->p[j] = Ared_nnz;
+      for (ptr = data->A->p[j]; ptr < data->A->p[j + 1]; ptr++) {
+        work->pol->Ared->i[Ared_nnz] = data->A->i[ptr];
+        work->pol->A_to_Alow_elem[ptr] = Ared_nnz++;
+      }
+      for (ptr = data->A->p[j]; ptr < data->A->p[j + 1]; ptr++) {
+        work->pol->Ared->i[Ared_nnz] = data->A->i[ptr] + data->m;
+        work->pol->A_to_Aupp_elem[ptr] = Ared_nnz++;
+      }
+    }
+    work->pol->Ared->p[data->n] = Ared_nnz;
+  }
+  exitflag = init_linsys_solver(&(work->pol->linsys_solver), work->data->P, work->pol->Ared,
+                                work->pol->delta, work->pol->rho_vec,
+                                work->settings->linsys_solver, 0);
+  if (exitflag) return osqp_error(exitflag);
 
   // Allocate solution
   work->solution = c_calloc(1, sizeof(OSQPSolution));
@@ -699,13 +732,23 @@ c_int osqp_cleanup(OSQPWorkspace *work) {
 #ifndef EMBEDDED
     // Free active constraints structure
     if (work->pol) {
-      if (work->pol->Alow_to_A) c_free(work->pol->Alow_to_A);
-      if (work->pol->Aupp_to_A) c_free(work->pol->Aupp_to_A);
-      if (work->pol->A_to_Alow) c_free(work->pol->A_to_Alow);
-      if (work->pol->A_to_Aupp) c_free(work->pol->A_to_Aupp);
-      if (work->pol->x)         c_free(work->pol->x);
-      if (work->pol->z)         c_free(work->pol->z);
-      if (work->pol->y)         c_free(work->pol->y);
+      if (work->pol->linsys_solver && work->pol->linsys_solver->free) {
+        work->pol->linsys_solver->free(work->pol->linsys_solver);
+      }
+      if (work->pol->Ared)          csc_spfree(work->pol->Ared);
+      if (work->pol->Alow_to_A)     c_free(work->pol->Alow_to_A);
+      if (work->pol->Aupp_to_A)     c_free(work->pol->Aupp_to_A);
+      if (work->pol->A_to_Alow)     c_free(work->pol->A_to_Alow);
+      if (work->pol->A_to_Aupp)     c_free(work->pol->A_to_Aupp);
+      if (work->pol->A_to_Alow_elem) c_free(work->pol->A_to_Alow_elem);
+      if (work->pol->A_to_Aupp_elem) c_free(work->pol->A_to_Aupp_elem);
+      if (work->pol->x)             c_free(work->pol->x);
+      if (work->pol->z)             c_free(work->pol->z);
+      if (work->pol->y)             c_free(work->pol->y);
+      if (work->pol->rhs_red)       c_free(work->pol->rhs_red);
+      if (work->pol->rhs)           c_free(work->pol->rhs);
+      if (work->pol->pol_sol)       c_free(work->pol->pol_sol);
+      if (work->pol->rho_vec)       c_free(work->pol->rho_vec);
       c_free(work->pol);
     }
 #endif /* ifndef EMBEDDED */

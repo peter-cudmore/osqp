@@ -67,6 +67,11 @@ TEST_CASE( "test_basic_qp", "[multi-file:4]" ) {
         test_basic_qp_solve_pardiso();
     }
 #endif
+#ifdef OSQP_CUSTOM_MEMORY_TEST
+    SECTION( "test_basic_qp_polish_no_alloc" ) {
+        test_basic_qp_polish_no_alloc();
+    }
+#endif
     SECTION( "test_basic_qp_update" ) {
         test_basic_qp_update();
     }

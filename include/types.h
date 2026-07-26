@@ -97,20 +97,27 @@ typedef struct {
  * Polish structure
  */
 typedef struct {
-  csc *Ared;          ///< active rows of A
-  ///<    Ared = vstack[Alow, Aupp]
-  c_int    n_low;     ///< number of lower-active rows
-  c_int    n_upp;     ///< number of upper-active rows
-  c_int   *A_to_Alow; ///< Maps indices in A to indices in Alow
-  c_int   *A_to_Aupp; ///< Maps indices in A to indices in Aupp
-  c_int   *Alow_to_A; ///< Maps indices in Alow to indices in A
-  c_int   *Aupp_to_A; ///< Maps indices in Aupp to indices in A
-  c_float *x;         ///< optimal x-solution obtained by polish
-  c_float *z;         ///< optimal z-solution obtained by polish
-  c_float *y;         ///< optimal y-solution obtained by polish
-  c_float  obj_val;   ///< objective value at polished solution
-  c_float  pri_res;   ///< primal residual at polished solution
-  c_float  dua_res;   ///< dual residual at polished solution
+  csc          *Ared;           ///< fixed active-set matrix pattern
+  LinSysSolver *linsys_solver;  ///< fixed-size linear solver for polishing
+  c_int         n_low;          ///< number of lower-active rows
+  c_int         n_upp;          ///< number of upper-active rows
+  c_int        *A_to_Alow;      ///< Maps indices in A to active lower rows
+  c_int        *A_to_Aupp;      ///< Maps indices in A to active upper rows
+  c_int        *Alow_to_A;      ///< Maps active lower rows to A row indices
+  c_int        *Aupp_to_A;      ///< Maps active upper rows to A row indices
+  c_int        *A_to_Alow_elem; ///< Maps A nz entries to duplicated lower rows in Ared
+  c_int        *A_to_Aupp_elem; ///< Maps A nz entries to duplicated upper rows in Ared
+  c_float      *x;              ///< optimal x-solution obtained by polish
+  c_float      *z;              ///< optimal z-solution obtained by polish
+  c_float      *y;              ///< optimal y-solution obtained by polish
+  c_float      *rhs_red;        ///< fixed-size right-hand side
+  c_float      *rhs;            ///< iterative refinement workspace
+  c_float      *pol_sol;        ///< polished solution workspace
+  c_float      *rho_vec;        ///< linsys rho input; inverse stores delta
+  c_float       delta;          ///< delta value cached in linsys workspace
+  c_float       obj_val;        ///< objective value at polished solution
+  c_float       pri_res;        ///< primal residual at polished solution
+  c_float       dua_res;        ///< dual residual at polished solution
 } OSQPPolish;
 # endif // ifndef EMBEDDED
 

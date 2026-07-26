@@ -14,10 +14,10 @@ m = 150
 Pt = sparse.random(n, n, random_state=rg)
 P = Pt.T.dot(Pt) + sparse.eye(n)
 P = sparse.triu(P, format='csc')
-q = sp.randn(n)
+q = rg.standard_normal(n)
 A = sparse.random(m, n, random_state=rg).tolil()  # Lil for efficiency
-u = 3 + sp.randn(m)
-l = -3 + sp.randn(m)
+u = 3 + rg.standard_normal(m)
+l = -3 + rg.standard_normal(m)
 
 # Make random problem primal infeasible
 A[int(n/2), :] = A[int(n/2)+1, :]

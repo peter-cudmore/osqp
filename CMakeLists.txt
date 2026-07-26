@@ -432,6 +432,12 @@ if (UNITTESTS)
                 CXX_EXTENSIONS NO
             )
     target_link_libraries (osqp_tester osqpstatic ${CMAKE_DL_LIBS})
+    if(OSQP_CUSTOM_MEMORY)
+        target_sources(osqp_tester PRIVATE
+                ${PROJECT_SOURCE_DIR}/tests/custom_memory/custom_memory.c
+                ${PROJECT_SOURCE_DIR}/tests/custom_memory/custom_memory.h
+                )
+    endif()
 
     # Add custom memory target
     add_executable(osqp_tester_custom_memory
@@ -444,6 +450,7 @@ if (UNITTESTS)
 		   ${PROJECT_SOURCE_DIR}/tests/custom_memory/custom_memory.h
 		)
     target_link_libraries (osqp_tester_custom_memory osqpstatic ${CMAKE_DL_LIBS})
+    target_compile_definitions(osqp_tester_custom_memory PRIVATE OSQP_CUSTOM_MEMORY_TEST=1)
 
     # Add testing
     include(CTest)
