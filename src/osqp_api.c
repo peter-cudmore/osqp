@@ -344,8 +344,6 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
   OSQPSolver*    solver;
   OSQPWorkspace* work;
   if (solverp) *solverp = OSQP_NULL;
-#define SETUP_FAIL(code) do { exitflag = (code); goto cleanup; } while (0)
-
 
 
   // Validate data
@@ -364,53 +362,53 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
   // Allocate empty workspace
   work   = c_calloc(1, sizeof(OSQPWorkspace));
-  if (!(work)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   solver->work = work;
 
   // Allocate empty info struct
   solver->info = c_calloc(1, sizeof(OSQPInfo));
-  if (!(solver->info)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(solver->info)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   // Start and allocate directly timer
 # ifdef OSQP_ENABLE_PROFILING
   work->timer = OSQPTimer_new();
-  if (!(work->timer)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->timer)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   osqp_tic(work->timer);
 # endif /* ifdef OSQP_ENABLE_PROFILING */
 
   // Initialize algebra libraries
   exitflag = osqp_algebra_init_libs(settings->device);
-  if (exitflag) SETUP_FAIL(OSQP_ALGEBRA_LOAD_ERROR);
+  if (exitflag) return osqp_error(OSQP_ALGEBRA_LOAD_ERROR);
 
   // Copy problem data into workspace
   work->data = c_calloc(1, sizeof(OSQPData));
-  if (!(work->data)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->data)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   work->data->m = m;
   work->data->n = n;
 
   // objective function
   work->data->P = OSQPMatrix_new_from_csc(P,1);   //copy assuming triu form
   work->data->q = OSQPVectorf_new(q,n);
-  if (!(work->data->P) || !(work->data->q)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->data->P) || !(work->data->q)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   // Constraints
   work->data->A = OSQPMatrix_new_from_csc(A,0); //assumes non-triu form (i.e. full)
-  if (!(work->data->A)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->data->A)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   work->data->l = OSQPVectorf_new(l,m);
   work->data->u = OSQPVectorf_new(u,m);
   if (!(work->data->l) || !(work->data->u))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   if (settings->rho_is_vec) {
     // Vectorized rho parameter
     work->rho_vec     = OSQPVectorf_malloc(m);
     work->rho_inv_vec = OSQPVectorf_malloc(m);
     if (!(work->rho_vec) || !(work->rho_inv_vec))
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
     // Type of constraints
     work->constr_type = OSQPVectori_calloc(m);
-    if (!(work->constr_type)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    if (!(work->constr_type)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   }
   else {
     work->rho_vec     = OSQP_NULL;
@@ -427,11 +425,11 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
   work->z_prev      = OSQPVectorf_calloc(m);
   work->y           = OSQPVectorf_calloc(m);
   if (!(work->x) || !(work->z) || !(work->xz_tilde))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
   if (!(work->xtilde_view) || !(work->ztilde_view))
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
   if (!(work->x_prev) || !(work->z_prev) || !(work->y))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   // Primal and dual residuals variables
   work->Ax  = OSQPVectorf_calloc(m);
@@ -448,28 +446,28 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
   work->Adelta_x = OSQPVectorf_calloc(m);
 
   if (!(work->Ax) || !(work->Px) || !(work->Aty))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
   if (!(work->delta_y) || !(work->Atdelta_y))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
   if (!(work->delta_x) || !(work->Pdelta_x) || !(work->Adelta_x))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   // Copy settings
   solver->settings = copy_settings(settings);
-  if (!(solver->settings)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(solver->settings)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   // Perform scaling
   if (settings->scaling) {
     // Allocate scaling structure
     work->scaling = c_malloc(sizeof(OSQPScaling));
-    if (!(work->scaling)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    if (!(work->scaling)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
     work->scaling->D    = OSQPVectorf_calloc(n);
     work->scaling->Dinv = OSQPVectorf_calloc(n);
     work->scaling->E    = OSQPVectorf_calloc(m);
     work->scaling->Einv = OSQPVectorf_calloc(m);
     if (!(work->scaling->D) || !(work->scaling->Dinv) ||
         !(work->scaling->E) || !(work->scaling->Einv))
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
 
     // Allocate workspace variables used in scaling
@@ -477,7 +475,7 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
     work->D_temp_A = OSQPVectorf_calloc(n);
     work->E_temp   = OSQPVectorf_calloc(m);
     if (!(work->D_temp) || !(work->D_temp_A) || !(work->E_temp))
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
     // Scale data
     osqp_profiler_sec_push(OSQP_PROFILER_SEC_SCALE);
@@ -507,10 +505,10 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
   if (exitflag == OSQP_NONCVX_ERROR) {
     update_status(solver->info, OSQP_NON_CVX);
-    SETUP_FAIL(exitflag);
+    return osqp_error(exitflag);
   }
   else if (exitflag) {
-    SETUP_FAIL(exitflag);
+    return osqp_error(exitflag);
   }
 
   // Initialize variables x, y, z to 0
@@ -518,16 +516,16 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
   // Initialize active constraints structure
   work->pol = c_calloc(1, sizeof(OSQPPolish));
-  if (!(work->pol)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->pol)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   work->pol->active_flags   = OSQPVectori_malloc(m);
   work->pol->active_flags_i = (OSQPInt *)c_malloc(m * sizeof(OSQPInt));
   work->pol->x              = OSQPVectorf_malloc(n);
   work->pol->z              = OSQPVectorf_malloc(m);
   work->pol->y              = OSQPVectorf_malloc(m);
-  if (!(work->pol->x)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->pol->x)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   if (!(work->pol->active_flags) || !(work->pol->active_flags_i) ||
       !(work->pol->z) || !(work->pol->y))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
   if (settings->linsys_solver == OSQP_DIRECT_SOLVER) {
     OSQPInt         j, ptr, Ared_nnz = 0;
@@ -551,7 +549,7 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
         !(work->pol->rhs_red) || !(work->pol->rhs) || !(work->pol->pol_sol) ||
         !(work->pol->rho_vec)) {
       if (Ared_csc) OSQPCscMatrix_free(Ared_csc);
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
     }
 
     work->pol->rhs_xview     = OSQPVectorf_view(work->pol->rhs, 0, n);
@@ -561,7 +559,7 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
     if (!(work->pol->rhs_xview) || !(work->pol->rhs_yview) ||
         !(work->pol->pol_sol_xview) || !(work->pol->pol_sol_yview)) {
       if (Ared_csc) OSQPCscMatrix_free(Ared_csc);
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
     }
 
 
@@ -580,21 +578,21 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
     work->pol->Ared = OSQPMatrix_new_from_csc(Ared_csc, 0);
     OSQPCscMatrix_free(Ared_csc);
-    if (!(work->pol->Ared)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    if (!(work->pol->Ared)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
     work->pol->delta = settings->delta;
     OSQPVectorf_set_scalar(work->pol->rho_vec, 1. / work->pol->delta);
 
     exitflag = osqp_algebra_init_linsys_solver(&(work->pol->linsys_solver), work->data->P, work->pol->Ared,
                                                work->pol->rho_vec, settings, OSQP_NULL, OSQP_NULL, 0);
-    if (exitflag) SETUP_FAIL(exitflag);
+    if (exitflag) return osqp_error(exitflag);
   }
 
   // Allocate solution
   if (settings->allocate_solution) {
     solver->solution = c_calloc(1, sizeof(OSQPSolution));
 
-    if (!(solver->solution)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    if (!(solver->solution)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
     solver->solution->x             = c_calloc(1, n * sizeof(OSQPFloat));
     solver->solution->y             = c_calloc(1, m * sizeof(OSQPFloat));
@@ -602,10 +600,10 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
     solver->solution->dual_inf_cert = c_calloc(1, n * sizeof(OSQPFloat));
 
     if ( !(solver->solution->x) || !(solver->solution->dual_inf_cert) )
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
 
     if ( m && (!(solver->solution->y) || !(solver->solution->prim_inf_cert)) )
-      SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
   }
   else {
     solver->solution = OSQP_NULL;
@@ -673,7 +671,7 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
 # ifdef OSQP_ENABLE_DERIVATIVES
   work->derivative_data = c_calloc(1, sizeof(OSQPDerivativeData));
-  if (!(work->derivative_data)) SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+  if (!(work->derivative_data)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
   work->derivative_data->y_u = OSQPVectorf_malloc(m);
   work->derivative_data->y_l = OSQPVectorf_malloc(m);
   work->derivative_data->ryl = OSQPVectorf_malloc(m);
@@ -681,7 +679,7 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
   work->derivative_data->rhs = OSQPVectorf_malloc(2 * (n + 2*m));
   if (!(work->derivative_data->y_u) || !(work->derivative_data->y_l) ||
     !(work->derivative_data->ryl) || !(work->derivative_data->ryu))
-    SETUP_FAIL(OSQP_MEM_ALLOC_ERROR);
+    return osqp_error(OSQP_MEM_ALLOC_ERROR);
 # endif /* ifdef OSQP_ENABLE_DERIVATIVES */
 
   osqp_profiler_sec_pop(OSQP_PROFILER_SEC_SETUP);
@@ -694,11 +692,6 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
   // Return exit flag
   return 0;
-
-cleanup:
-  osqp_cleanup(solver);
-  if (solverp) *solverp = OSQP_NULL;
-  return osqp_error(exitflag);
 }
 
 #endif /* ifndef OSQP_EMBEDDED_MODE */
