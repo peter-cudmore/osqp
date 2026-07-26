@@ -343,6 +343,8 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
   OSQPSolver*    solver;
   OSQPWorkspace* work;
+  if (solverp) *solverp = OSQP_NULL;
+
 
   // Validate data
   if (validate_data(P,q,A,l,u,m,n)) return osqp_error(OSQP_DATA_VALIDATION_ERROR);
