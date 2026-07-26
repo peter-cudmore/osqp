@@ -343,6 +343,8 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
 
   OSQPSolver*    solver;
   OSQPWorkspace* work;
+  if (solverp) *solverp = OSQP_NULL;
+
 
   // Validate data
   if (validate_data(P,q,A,l,u,m,n)) return osqp_error(OSQP_DATA_VALIDATION_ERROR);
@@ -513,16 +515,79 @@ OSQPInt osqp_setup(OSQPSolver**         solverp,
   osqp_cold_start(solver);
 
   // Initialize active constraints structure
-  work->pol = c_malloc(sizeof(OSQPPolish));
+  work->pol = c_calloc(1, sizeof(OSQPPolish));
   if (!(work->pol)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
-  work->pol->active_flags = OSQPVectori_malloc(m);
-  work->pol->x            = OSQPVectorf_malloc(n);
-  work->pol->z            = OSQPVectorf_malloc(m);
-  work->pol->y            = OSQPVectorf_malloc(m);
+  work->pol->active_flags   = OSQPVectori_malloc(m);
+  work->pol->active_flags_i = (OSQPInt *)c_malloc(m * sizeof(OSQPInt));
+  work->pol->x              = OSQPVectorf_malloc(n);
+  work->pol->z              = OSQPVectorf_malloc(m);
+  work->pol->y              = OSQPVectorf_malloc(m);
   if (!(work->pol->x)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
-  if (!(work->pol->active_flags) ||
+  if (!(work->pol->active_flags) || !(work->pol->active_flags_i) ||
       !(work->pol->z) || !(work->pol->y))
     return osqp_error(OSQP_MEM_ALLOC_ERROR);
+
+  if (settings->linsys_solver == OSQP_DIRECT_SOLVER) {
+    OSQPInt         j, ptr, Ared_nnz = 0;
+    OSQPInt         nnzA = OSQPMatrix_get_nz(work->data->A);
+    OSQPInt*        A_p = OSQPMatrix_get_p(work->data->A);
+    OSQPInt*        A_i = OSQPMatrix_get_i(work->data->A);
+    OSQPFloat*      Ared_x = (OSQPFloat *)c_calloc(2 * nnzA, sizeof(OSQPFloat));
+    OSQPInt*        Ared_i = (OSQPInt *)c_malloc(2 * nnzA * sizeof(OSQPInt));
+    OSQPInt*        Ared_p = (OSQPInt *)c_malloc((n + 1) * sizeof(OSQPInt));
+    OSQPCscMatrix*  Ared_csc = OSQPCscMatrix_new(2 * m, n, 2 * nnzA,
+                                                 Ared_x, Ared_i, Ared_p);
+    if (Ared_csc) Ared_csc->owned = 1;
+
+    work->pol->A_to_Alow_elem = (OSQPInt *)c_malloc(nnzA * sizeof(OSQPInt));
+    work->pol->A_to_Aupp_elem = (OSQPInt *)c_malloc(nnzA * sizeof(OSQPInt));
+    work->pol->rhs_red        = OSQPVectorf_malloc(n + 2 * m);
+    work->pol->rhs            = OSQPVectorf_malloc(n + 2 * m);
+    work->pol->pol_sol        = OSQPVectorf_malloc(n + 2 * m);
+    work->pol->rho_vec        = OSQPVectorf_malloc(2 * m);
+
+    if (!Ared_csc || !(work->pol->A_to_Alow_elem) || !(work->pol->A_to_Aupp_elem) ||
+        !(work->pol->rhs_red) || !(work->pol->rhs) || !(work->pol->pol_sol) ||
+        !(work->pol->rho_vec)) {
+      if (Ared_csc) OSQPCscMatrix_free(Ared_csc);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
+    }
+
+    work->pol->rhs_xview     = OSQPVectorf_view(work->pol->rhs, 0, n);
+    work->pol->rhs_yview     = OSQPVectorf_view(work->pol->rhs, n, 2 * m);
+    work->pol->pol_sol_xview = OSQPVectorf_view(work->pol->pol_sol, 0, n);
+    work->pol->pol_sol_yview = OSQPVectorf_view(work->pol->pol_sol, n, 2 * m);
+    if (!(work->pol->rhs_xview) || !(work->pol->rhs_yview) ||
+        !(work->pol->pol_sol_xview) || !(work->pol->pol_sol_yview)) {
+      if (Ared_csc) OSQPCscMatrix_free(Ared_csc);
+      return osqp_error(OSQP_MEM_ALLOC_ERROR);
+    }
+
+
+    for (j = 0; j < n; j++) {
+      Ared_p[j] = Ared_nnz;
+      for (ptr = A_p[j]; ptr < A_p[j + 1]; ptr++) {
+        Ared_i[Ared_nnz] = A_i[ptr];
+        work->pol->A_to_Alow_elem[ptr] = Ared_nnz++;
+      }
+      for (ptr = A_p[j]; ptr < A_p[j + 1]; ptr++) {
+        Ared_i[Ared_nnz] = A_i[ptr] + m;
+        work->pol->A_to_Aupp_elem[ptr] = Ared_nnz++;
+      }
+    }
+    Ared_p[n] = Ared_nnz;
+
+    work->pol->Ared = OSQPMatrix_new_from_csc(Ared_csc, 0);
+    OSQPCscMatrix_free(Ared_csc);
+    if (!(work->pol->Ared)) return osqp_error(OSQP_MEM_ALLOC_ERROR);
+
+    work->pol->delta = settings->delta;
+    OSQPVectorf_set_scalar(work->pol->rho_vec, 1. / work->pol->delta);
+
+    exitflag = osqp_algebra_init_linsys_solver(&(work->pol->linsys_solver), work->data->P, work->pol->Ared,
+                                               work->pol->rho_vec, settings, OSQP_NULL, OSQP_NULL, 0);
+    if (exitflag) return osqp_error(exitflag);
+  }
 
   // Allocate solution
   if (settings->allocate_solution) {
@@ -1101,10 +1166,25 @@ OSQPInt osqp_cleanup(OSQPSolver* solver) {
 #ifndef OSQP_EMBEDDED_MODE
     // Free active constraints structure
     if (work->pol) {
+      if (work->pol->linsys_solver && work->pol->linsys_solver->free) {
+        work->pol->linsys_solver->free(work->pol->linsys_solver);
+      }
+      OSQPMatrix_free(work->pol->Ared);
+      c_free(work->pol->active_flags_i);
+      c_free(work->pol->A_to_Alow_elem);
+      c_free(work->pol->A_to_Aupp_elem);
       OSQPVectori_free(work->pol->active_flags);
       OSQPVectorf_free(work->pol->x);
       OSQPVectorf_free(work->pol->z);
       OSQPVectorf_free(work->pol->y);
+      OSQPVectorf_free(work->pol->rhs_red);
+      OSQPVectorf_free(work->pol->rhs);
+      OSQPVectorf_free(work->pol->pol_sol);
+      OSQPVectorf_view_free(work->pol->rhs_xview);
+      OSQPVectorf_view_free(work->pol->rhs_yview);
+      OSQPVectorf_view_free(work->pol->pol_sol_xview);
+      OSQPVectorf_view_free(work->pol->pol_sol_yview);
+      OSQPVectorf_free(work->pol->rho_vec);
       c_free(work->pol);
     }
 #endif /* ifndef OSQP_EMBEDDED_MODE */

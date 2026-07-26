@@ -138,6 +138,7 @@ if(OSQP_ALGEBRA_BUILTIN)
                              ${CMAKE_CURRENT_SOURCE_DIR}/../include/private
                              ${osqplib_includes})
   target_link_libraries(osqp_tester_custom_memory osqpstatic Catch2::Catch2 ${osqplib_link_libs})
+  target_compile_definitions(osqp_tester_custom_memory PRIVATE OSQP_CUSTOM_MEMORY_TEST=1)
 
   add_test(NAME osqp_tester_custom_memory COMMAND osqp_tester_custom_memory)
 endif()

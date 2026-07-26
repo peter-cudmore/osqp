@@ -54,6 +54,53 @@ TEST_CASE_METHOD(basic_qp_test_fixture, "Basic QP: Solve", "[solve][qp]")
       TESTS_TOL);
 }
 
+#ifdef OSQP_CUSTOM_MEMORY_TEST
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern long int alloc_counter;
+#ifdef __cplusplus
+}
+#endif
+
+TEST_CASE_METHOD(basic_qp_test_fixture, "Basic QP: Polish no alloc", "[solve][qp][custom-memory]")
+{
+  OSQPInt  exitflag;
+  long int alloc_after_setup;
+
+  settings->polishing         = 1;
+  settings->polish_refine_iter = 3;
+  settings->scaling           = 0;
+  settings->warm_starting     = 0;
+  settings->verbose           = 0;
+  settings->linsys_solver     = OSQP_DIRECT_SOLVER;
+
+  exitflag = osqp_setup(&tmpSolver, data->P, data->q,
+                        data->A, data->l, data->u,
+                        data->m, data->n, settings.get());
+  solver.reset(tmpSolver);
+  mu_assert("Basic QP custom memory test: Setup error!", exitflag == 0);
+
+  alloc_after_setup = alloc_counter;
+
+  exitflag = osqp_solve(solver.get());
+  mu_assert("Basic QP custom memory test: Solve error!", exitflag == 0);
+  mu_assert("Basic QP custom memory test: Unexpected allocation during polish solve!",
+            alloc_counter == alloc_after_setup);
+  mu_assert("Basic QP custom memory test: Wrong solver status after polish solve!",
+            solver->info->status_val == sols_data->status_test);
+
+  settings->delta = 1e-5;
+  exitflag = osqp_update_settings(solver.get(), settings.get());
+  mu_assert("Basic QP custom memory test: Delta update error!", exitflag == 0);
+
+  exitflag = osqp_solve(solver.get());
+  mu_assert("Basic QP custom memory test: Solve error after delta update!", exitflag == 0);
+  mu_assert("Basic QP custom memory test: Unexpected allocation after delta update!",
+            alloc_counter == alloc_after_setup);
+}
+#endif
+
 TEST_CASE_METHOD(basic_qp_test_fixture, "Basic QP: Settings", "[solve][qp]")
 {
   OSQPInt        exitflag;

@@ -48,17 +48,30 @@ typedef struct {
  */
 
 typedef struct {
-  OSQPMatrix*  Ared;          ///< active rows of A; Ared = vstack[Alow, Aupp]
-  OSQPInt      n_active;      ///< number of active constraints
-  OSQPVectori* active_flags;  ///< -1/0/1 to indicate  lower/ inactive / upper active constraints
-  OSQPVectorf* x;             ///< optimal x-solution obtained by polish
-  OSQPVectorf* z;             ///< optimal z-solution obtained by polish
-  OSQPVectorf* y;             ///< optimal y-solution obtained by polish
-  OSQPFloat    obj_val;       ///< objective value at polished solution
-  OSQPFloat    dual_obj_val;  ///< Dual objective value at polished solution
-  OSQPFloat    duality_gap;   ///< Duality gap at polished solution
-  OSQPFloat    prim_res;      ///< primal residual at polished solution
-  OSQPFloat    dual_res;      ///< dual residual at polished solution
+  OSQPMatrix*   Ared;             ///< active rows of A; direct path uses fixed duplicated rows
+  OSQPInt       n_active;         ///< number of active constraints
+  OSQPVectori*  active_flags;     ///< -1/0/1 to indicate lower / inactive / upper active constraints
+  OSQPInt*      active_flags_i;   ///< raw active-flags workspace
+  LinSysSolver* linsys_solver;    ///< preallocated direct-solver workspace for polishing
+  OSQPInt*      A_to_Alow_elem;   ///< maps A nz entries to lower duplicated rows in Ared
+  OSQPInt*      A_to_Aupp_elem;   ///< maps A nz entries to upper duplicated rows in Ared
+  OSQPVectorf*  x;                ///< optimal x-solution obtained by polish
+  OSQPVectorf*  z;                ///< optimal z-solution obtained by polish
+  OSQPVectorf*  y;                ///< optimal y-solution obtained by polish
+  OSQPVectorf*  rhs_red;          ///< fixed-size right-hand side workspace
+  OSQPVectorf*  rhs;              ///< iterative refinement workspace
+  OSQPVectorf*  rhs_xview;        ///< top view into rhs
+  OSQPVectorf*  rhs_yview;        ///< bottom view into rhs
+  OSQPVectorf*  pol_sol;          ///< polished solution workspace
+  OSQPVectorf*  pol_sol_xview;    ///< top view into pol_sol
+  OSQPVectorf*  pol_sol_yview;    ///< bottom view into pol_sol
+  OSQPVectorf*  rho_vec;          ///< linsys rho input; inverse stores delta
+  OSQPFloat     delta;            ///< delta cached in linsys workspace
+  OSQPFloat     obj_val;          ///< objective value at polished solution
+  OSQPFloat     dual_obj_val;     ///< dual objective value at polished solution
+  OSQPFloat     duality_gap;      ///< duality gap at polished solution
+  OSQPFloat     prim_res;         ///< primal residual at polished solution
+  OSQPFloat     dual_res;         ///< dual residual at polished solution
 } OSQPPolish;
 # endif // ifndef OSQP_EMBEDDED_MODE
 
