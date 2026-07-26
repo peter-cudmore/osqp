@@ -2,7 +2,7 @@ name: Docs
 
 on:
   push:
-    branches: [ master, develop-1.0 ]
+    branches: [ master, release-0.6.3 ]
     tags:
       - '*'
 
@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [3.9]
+        python: [3.12]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         with:
           ref: master
           lfs: false
@@ -25,39 +25,43 @@ jobs:
           sudo apt-get install doxygen
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
       - name: Install Python dependencies
         run: |
-          pip install sphinx sphinx-rtd-theme breathe
+          pip install sphinx sphinx-rtd-theme breathe marimo
 
       - name: Setup Envvars
         run: |
             if [[ $GITHUB_REF = "refs/tags/"* ]] ; then echo "OSQP_VERSION=${GITHUB_REF/refs\/tags\//}" ; else echo "OSQP_VERSION=0.0.0" ; fi >> $GITHUB_ENV
             if [[ $GITHUB_REF = "refs/tags/"* ]] ; then echo "OSQP_NAME=osqp-${GITHUB_REF/refs\/tags\//}-${{ runner.os }}" ; else echo "OSQP_NAME=osqp-0.0.0-${{ runner.os }}" ; fi >> $GITHUB_ENV
 
+      - name: Build marimo notebooks
+        run: |
+          cd docs/notebooks && yes | marimo export html-wasm basic.py -o ../../site/wasm --mode edit
+
       - name: Build docs
         run: |
-          cd docs && make HTMLCOPYDIR=../site/docs html && touch ../site/docs/.nojekyll
+          cd docs && make HTMLCOPYDIR=../site/docs html && touch ../site/docs/.nojekyll && touch .nojekyll
 
-      # Build documentation on the develop-1.0 branch in a subfolder
+      # Build documentation on the release-0.6.3 branch in a subfolder
       # ------------------------------------------------------------
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         with:
-          ref: develop-1.0
-          path: develop-1.0
+          ref: release-0.6.3
+          path: release-0.6.3
           clean: false
 
-      - name: Build docs on develop-1.0
+      - name: Build docs on 0.6.3
         run: |
-          rm -rf develop-1.0/.git
-          cd develop-1.0/docs && make HTMLCOPYDIR=../../site/docs/develop-1.0 html
+          rm -rf release-0.6.3/.git
+          cd release-0.6.3/docs && make HTMLCOPYDIR=../../site/docs/release-0.6.3 html
       # ------------------------------------------------------------
 
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@4.1.1
+        uses: JamesIves/github-pages-deploy-action@v4.7.4
         with:
           branch: gh-pages
           folder: site

@@ -49,6 +49,7 @@ The problem can be solved by
 
    results = m.solve()
 
+An optional parameter :code:`raise_error` (default :code:`False`) can be passed to the :code:`solve` method. If set to :code:`True`, the method will raise an exception if the solver status is not :code:`OSQP_SOLVED`. See :ref:`status_values` for more details.
 
 The :code:`results` object contains the primal solution :code:`x`, the dual solution :code:`y`, certificate of primal infeasibility :code:`prim_inf_cert`, certificate of dual infeasibility :code:`dual_inf_cert` and the :code:`info` object containing the solver statistics defined in the following table
 
@@ -56,8 +57,6 @@ The :code:`results` object contains the primal solution :code:`x`, the dual solu
 +-----------------------+------------------------------------------------+
 | Member                | Description                                    |
 +=======================+================================================+
-| :code:`iter`          | Number of iterations                           |
-+-----------------------+------------------------------------------------+
 | :code:`status`        | Solver status                                  |
 +-----------------------+------------------------------------------------+
 | :code:`status_val`    | Solver status value as in :ref:`status_values` |
@@ -66,9 +65,21 @@ The :code:`results` object contains the primal solution :code:`x`, the dual solu
 +-----------------------+------------------------------------------------+
 | :code:`obj_val`       | Objective value                                |
 +-----------------------+------------------------------------------------+
-| :code:`pri_res`       | Primal residual                                |
+| :code:`dual_obj_val`  | Dual objective value                           |
 +-----------------------+------------------------------------------------+
-| :code:`dua_res`       | Dual residual                                  |
+| :code:`prim_res`      | Primal residual                                |
++-----------------------+------------------------------------------------+
+| :code:`dual_res`      | Dual residual                                  |
++-----------------------+------------------------------------------------+
+| :code:`duality_gap`   | Duality gap                                    |
++-----------------------+------------------------------------------------+
+| :code:`iter`          | Number of iterations                           |
++-----------------------+------------------------------------------------+
+| :code:`restarts`      | Number of restarts                             |
++-----------------------+------------------------------------------------+
+| :code:`rho_updates`   | Number of rho updates                          |
++-----------------------+------------------------------------------------+
+| :code:`rho_estimate`  | Optimal rho estimate                           |
 +-----------------------+------------------------------------------------+
 | :code:`setup_time`    | Setup time                                     |
 +-----------------------+------------------------------------------------+
@@ -80,9 +91,7 @@ The :code:`results` object contains the primal solution :code:`x`, the dual solu
 +-----------------------+------------------------------------------------+
 | :code:`run_time`      | Total run time: setup/update + solve + polish  |
 +-----------------------+------------------------------------------------+
-| :code:`rho_estimate`  | Optimal rho estimate                           |
-+-----------------------+------------------------------------------------+
-| :code:`rho_updates`   | Number of rho updates                          |
+| :code:`primdual_int`  | Primal-dual integral                           |
 +-----------------------+------------------------------------------------+
 
 Note that if multiple solves are executed from single setup, then after the
@@ -123,7 +132,7 @@ The user does not have to specify all the keyword arguments.
 Update problem matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Matrices :code:`A` and :code:`P` can be updated by changing the value of their elements but not their sparsity pattern.
-The interface is designed to mimic the :ref:`C counterpart <c_cpp_update_data>`.
+The interface is designed to mimic the :ref:`C counterpart <c_update_data>`.
 Note that the new values of :code:`P` represent only the upper triangular part while :code:`A` is always represented as a full matrix.
 
 You can update the values of all the elements of :code:`P` by executing
@@ -146,7 +155,7 @@ Matrix :code:`A` can be changed in the same way. You can also change both matric
 
 .. code:: python
 
-    m.update(Px=Px_new, Px_idx=Px_new_idx, Ax=Ax_new, Ax=Ax_new_idx)
+    m.update(Px=Px_new, Px_idx=Px_new_idx, Ax=Ax_new, Ax_idx=Ax_new_idx)
 
 
 Update settings

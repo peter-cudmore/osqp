@@ -1,58 +1,204 @@
 #include "osqp.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
+/* Sample problems */
+#include "problems/cvxqp2_s.h"
+#include "problems/hs21.h"
+#include "problems/hs35.h"
+#include "problems/qpcblend.h"
+#include "problems/qptest.h"
+#include "problems/largeqp.h"
+#include "problems/primalc1.h"
 
-int main(int argc, char **argv) {
-  // Load problem data
-  c_float P_x[3] = { 4.0, 1.0, 2.0, };
-  c_int   P_nnz  = 3;
-  c_int   P_i[3] = { 0, 0, 1, };
-  c_int   P_p[3] = { 0, 1, 3, };
-  c_float q[2]   = { 1.0, 1.0, };
-  c_float A_x[4] = { 1.0, 1.0, 1.0, 1.0, };
-  c_int   A_nnz  = 4;
-  c_int   A_i[4] = { 0, 1, 0, 2, };
-  c_int   A_p[3] = { 0, 2, 4, };
-  c_float l[3]   = { 1.0, 0.0, 0.0, };
-  c_float u[3]   = { 1.0, 0.7, 0.7, };
-  c_int n = 2;
-  c_int m = 3;
+#define NAME_BUF_LENGTH 20
 
-  // Exitflag
-  c_int exitflag = 0;
+#define PREMADE_PROBLEM(name) printf("Using problem data: " #name "\n"); \
+                              qp_n = name ## _data_n;                    \
+                              qp_m = name ## _data_m;                    \
+                              qp_P = & name ## _data_P_csc;              \
+                              qp_q = name ## _data_q_val;                \
+                              qp_A = & name ## _data_A_csc;              \
+                              qp_l = name ## _data_l_val;                \
+                              qp_u = name ## _data_u_val;                \
+                              dynamic_matrices = 0;                      \
+                              dynamic_settings = 0;                      \
+                              settings = & name ## _settings;            \
+                              settings->verbose = 1;
 
-  // Workspace structures
-  OSQPWorkspace *work;
-  OSQPSettings  *settings = (OSQPSettings *)c_malloc(sizeof(OSQPSettings));
-  OSQPData      *data     = (OSQPData *)c_malloc(sizeof(OSQPData));
+int main(int argc, char *argv[]) {
 
-  // Populate data
-  if (data) {
-    data->n = n;
-    data->m = m;
-    data->P = csc_matrix(data->n, data->n, P_nnz, P_x, P_i, P_p);
-    data->q = q;
-    data->A = csc_matrix(data->m, data->n, A_nnz, A_x, A_i, A_p);
-    data->l = l;
-    data->u = u;
+  /* Problem data for a simple problem */
+  OSQPFloat P_x[3] = { 4.0, 1.0, 2.0, };
+  OSQPInt   P_nnz  = 3;
+  OSQPInt   P_i[3] = { 0, 0, 1, };
+  OSQPInt   P_p[3] = { 0, 1, 3, };
+  OSQPFloat q[2]   = { 1.0, 1.0, };
+  OSQPFloat A_x[4] = { 1.0, 1.0, 1.0, 1.0, };
+  OSQPInt   A_nnz  = 4;
+  OSQPInt   A_i[4] = { 0, 1, 0, 2, };
+  OSQPInt   A_p[3] = { 0, 2, 4, };
+  OSQPFloat l[3]   = { 1.0, 0.0, 0.0, };
+  OSQPFloat u[3]   = { 1.0, 0.7, 0.7, };
+  OSQPInt   n = 2;
+  OSQPInt   m = 3;
+
+  /* Exitflag */
+  OSQPInt exitflag;
+  OSQPInt dynamic_matrices = 0;
+  OSQPInt dynamic_settings = 0;
+
+  /* Solver, settings, matrices */
+  OSQPSolver*   solver   = NULL;
+  OSQPSettings* settings = NULL;
+
+  OSQPInt qp_n = 0;
+  OSQPInt qp_m = 0;
+  OSQPFloat* qp_q = NULL;
+  OSQPFloat* qp_l = NULL;
+  OSQPFloat* qp_u = NULL;
+  OSQPCscMatrix* qp_P = NULL;
+  OSQPCscMatrix* qp_A = NULL;
+
+  // Extract a problem name
+  char problem_name[NAME_BUF_LENGTH];
+
+  if( argc == 2) {
+    snprintf(problem_name, NAME_BUF_LENGTH, "%s", argv[1]);
   }
 
-  // Define solver settings as default
-  if (settings) osqp_set_default_settings(settings);
+  if( strcmp(problem_name, "list") == 0 ) {
+    printf("Available problems:\n");
+    printf("  cvxqp2_s\n");
+    printf("  qpcblend\n");
+    printf("  largeqp\n");
+    printf("  qptest\n");
+    printf("  hs35hs21\n");
+    printf("  primalc1\n");
 
-  // Setup workspace
-  exitflag = osqp_setup(&work, data, settings);
-
-  // Solve Problem
-  osqp_solve(work);
-
-  // Clean workspace
-  osqp_cleanup(work);
-  if (data) {
-    if (data->A) c_free(data->A);
-    if (data->P) c_free(data->P);
-    c_free(data);
+    return 0;
   }
-  if (settings)  c_free(settings);
+  else if( strcmp(problem_name, "cvxqp2_s") == 0 ) {
+    /*
+     * CVXQP2_S problem from the Maros Mesaros problem set
+     */
+    PREMADE_PROBLEM(cvxqp2_s);
+  }
+  else if( strcmp(problem_name, "qpcblend") == 0 ) {
+    /*
+     * QPCBLEND problem from the Maros Mesaros problem set
+     */
+    PREMADE_PROBLEM(qpcblend);
+  }
+  else if( strcmp(problem_name, "largeqp") == 0 ) {
+    PREMADE_PROBLEM(largeqp);
 
-  return exitflag;
+    // This problem uses dynamic settings
+    dynamic_settings = 1;
+  }
+  else if( strcmp(problem_name, "qptest") == 0 ) {
+    /*
+     * QPTEST problem from the Maros Mesaros problem set
+     */
+    PREMADE_PROBLEM(qptest);
+  }
+  else if( strcmp(problem_name, "hs21") == 0 ) {
+    /*
+     * HS21 problem from the Maros Mesaros problem set
+     */
+    PREMADE_PROBLEM(hs21);
+  }
+  else if( strcmp(problem_name, "hs35") == 0 ) {
+    /*
+     * HS35 problem from the Maros Mesaros problem set
+     */
+    PREMADE_PROBLEM(hs35);
+  }
+  else if( strcmp(problem_name, "primalc1") == 0 ) {
+    /*
+     * PRIMALC1 problem from the Maros Mesaros problem set
+     */
+    PREMADE_PROBLEM(primalc1);
+    settings->scaling = 1;
+  }
+  else {
+    printf("Using problem data: default\n");
+    // Problem dimensions
+    qp_n = n;
+    qp_m = m;
+
+    // Cost function
+    qp_A = OSQPCscMatrix_new(m, n, A_nnz, A_x, A_i, A_p);
+    qp_q = q;
+
+    // Constraints
+    qp_P = OSQPCscMatrix_new(n, n, P_nnz, P_x, P_i, P_p);
+    qp_l = l;
+    qp_u = u;
+
+    dynamic_matrices = 1;
+  }
+
+  /* Set default settings */
+  if( dynamic_settings || !settings ) {
+    /* Get default settings */
+    settings = OSQPSettings_new();
+    dynamic_settings = 1;
+
+    if (!settings) {
+      printf("  OSQP Errored allocating settings object.\n");
+      return 1;
+    }
+
+    if (settings) {
+      settings->polishing = 1;
+      settings->scaling = 1;
+
+      //settings->linsys_solver = OSQP_DIRECT_SOLVER;
+      //settings->linsys_solver = OSQP_INDIRECT_SOLVER;
+    }
+  }
+
+  settings->scaled_termination = 0;
+
+  //settings->adaptive_rho = OSQP_ADAPTIVE_RHO_UPDATE_TIME;
+  settings->adaptive_rho = OSQP_ADAPTIVE_RHO_UPDATE_DISABLED;
+  settings->rho = 1.0;
+
+  OSQPInt cap = osqp_capabilities();
+
+  printf("This OSQP library supports:\n");
+  if(cap & OSQP_CAPABILITY_DIRECT_SOLVER) {
+    printf("    A direct linear algebra solver\n");
+  }
+  if(cap & OSQP_CAPABILITY_INDIRECT_SOLVER) {
+    printf("    An indirect linear algebra solver\n");
+  }
+  if(cap & OSQP_CAPABILITY_CODEGEN) {
+    printf("    Code generation\n");
+  }
+  if(cap & OSQP_CAPABILITY_DERIVATIVES) {
+    printf("    Derivatives calculation\n");
+  }
+  printf("\n");
+
+  /* Setup solver */
+  exitflag = osqp_setup(&solver, qp_P, qp_q, qp_A, qp_l, qp_u, qp_m, qp_n, settings);
+
+  /* Solve problem */
+  if (!exitflag) exitflag = osqp_solve(solver);
+
+  /* Cleanup */
+  osqp_cleanup(solver);
+
+  if( dynamic_matrices ) {
+    OSQPCscMatrix_free(qp_A);
+    OSQPCscMatrix_free(qp_P);
+  }
+
+  if (settings && dynamic_settings)
+    OSQPSettings_free(settings);
+
+  return (int)exitflag;
 }

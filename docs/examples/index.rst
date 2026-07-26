@@ -1,5 +1,16 @@
+.. _examples:
+
 Examples
 ========
+
+
+Live Demo
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   live-demo.rst
 
 
 Demo
@@ -25,3 +36,12 @@ Applications
    mpc.rst
    portfolio.rst
    svm.rst
+
+
+Torch
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   torch.rst

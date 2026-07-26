@@ -1,7 +1,8 @@
 OSQP solver documentation
 ==========================
-**Join our** `forum <https://osqp.discourse.group/>`_ **for any
-questions related to the solver!**
+
+`Visit our GitHub Discussions page <https://github.com/orgs/osqp/discussions>`_
+for any questions related to the solver!
 
 The OSQP (Operator Splitting Quadratic Program) solver is a numerical
 optimization package for solving convex quadratic programs in the form
@@ -9,10 +10,10 @@ optimization package for solving convex quadratic programs in the form
 .. math::
   \begin{array}{ll}
     \mbox{minimize} & \frac{1}{2} x^T P x + q^T x \\
-    \mbox{subject to} & l \leq A x \leq u
+    \mbox{subject to} & l \le A x \le u
   \end{array}
 
-where :math:`x` is the optimization variable and
+where :math:`x \in \mathbf{R}^n` is the optimization variable and
 :math:`P \in \mathbf{S}^{n}_{+}` a positive semidefinite matrix.
 
 **Code available on** `GitHub <https://github.com/osqp/osqp>`_.
@@ -55,7 +56,7 @@ If you are using OSQP for your work, we encourage you to
         It can be easily warm-started and the matrix factorization can be cached to solve parametrized problems extremely efficiently.
 
     Interfaces
-        It can be interfaced to C, C++, Fortran (soon!), Python, Julia and Matlab.
+        It provides interfaces to C, C++, Fortran, Julia, Matlab, Python, R, Ruby, and Rust.
 
 
 
@@ -72,17 +73,18 @@ The following people have been involved in the development of OSQP:
 * `Bartolomeo Stellato <https://stellato.io/>`_ (Princeton University): main development
 * `Goran Banjac <https://github.com/gbanjac>`_ (ETH Zürich): main development
 * `Nicholas Moehle <https://www.nicholasmoehle.com/>`_ (Stanford University): methods, maths, and code generation
-* `Paul Goulart <http://users.ox.ac.uk/~engs1373/>`_ (University of Oxford): methods, maths, and Matlab interface
+* `Paul Goulart <https://users.ox.ac.uk/~engs1373/>`_ (University of Oxford): methods, maths, and Matlab interface
 * `Alberto Bemporad <http://cse.lab.imtlucca.it/~bemporad/>`_ (IMT Lucca): methods and maths
 * `Stephen Boyd <https://web.stanford.edu/~boyd/>`_ (Stanford University): methods and maths
 * `Ian McInerney <https://ism.engineer>`_ (Imperial College London): software engineering, code generation
-* `Vineet Bansal <https://csml.princeton.edu/people/vineet-bansal>`_ (CSML, Princeton University): software engineering
+* `Vineet Bansal <https://researchcomputing.princeton.edu/about/people-directory/vineet-bansal>`_ (Princeton University): software engineering
 * `Michel Schubiger <mailto:michel.schubiger@bluewin.ch>`_ (Schindler R&D): GPU implementation
 * `John Lygeros <https://control.ee.ethz.ch/people/profile.john-lygeros.html>`_ (ETH Zurich): methods and maths
+* `Amit Solomon <mailto:as3993@princeton.edu>`_ (Princeton University): software engineering
 
 Interfaces development
 
-* `Nick Gould <http://www.numerical.rl.ac.uk/people/nimg/nimg.html>`_ (Rutherford Appleton Laboratory): Fortran and CUTEst interfaces
+* `Nick Gould <https://www.numerical.rl.ac.uk/people/nick-gould>`_ (Rutherford Appleton Laboratory): Fortran and CUTEst interfaces
 * `Ed Barnard <eabarnard@gmail.com>`_ (University of Oxford): Rust interface
 
 
@@ -104,8 +106,11 @@ Numerical benchmarks against other solvers are available `here <https://github.c
    solver/index
    get_started/index
    interfaces/index
+   backends/index
    parsers/index
    codegen/index
    examples/index
+   advanced/index
+   get_started/migration_guide
    contributing/index
    citing/index

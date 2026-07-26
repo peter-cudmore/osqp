@@ -21,7 +21,7 @@ Sources
 
 You need to install the following (see :ref:`build_from_sources` for more details):
 
-- A supported 64bit `C/C++ compiler <https://www.mathworks.com/support/compilers.html>`_
+- A supported 64bit `C/C++ compiler <https://www.mathworks.com/support/requirements/supported-compilers.html>`_
 - `CMake <https://cmake.org/>`_
 
 
@@ -41,20 +41,14 @@ After you install both, check that your compiler is selected by executing
       setenv('MW_MINGW64_LOC', 'C:\TDM-GCC-64')
 
 
-   where :code:`C:\TDM-GCC-64` is the installation folder for TDM-GCC.
+   where :code:`C:\\TDM-GCC-64` is the installation folder for TDM-GCC.
 
 You can now build the interface by running inside Matlab
 
 .. code:: matlab
 
    !git clone --recurse-submodules https://github.com/osqp/osqp-matlab
-   cd osqp-matlab
-   make_osqp
+   osqp.build('osqp_mex')
 
 
-Then you can add the interface to the search path by executing from the same directory
-
-.. code:: matlab
-
-   addpath(pwd)
-   savepath
+You are now ready to start using the Matlab interface.

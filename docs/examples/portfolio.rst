@@ -45,7 +45,7 @@ Python
     from scipy import sparse
 
     # Generate problem data
-    sp.random.seed(1)
+    np.random.seed(1)
     n = 100
     k = 10
     F = sparse.random(n, k, density=0.7, format='csc')
@@ -56,11 +56,9 @@ Python
     # OSQP data
     P = sparse.block_diag([D, sparse.eye(k)], format='csc')
     q = np.hstack([-mu / (2*gamma), np.zeros(k)])
-    A = sparse.vstack([
-            sparse.hstack([F.T, -sparse.eye(k)]),
-            sparse.hstack([sparse.csc_matrix(np.ones((1, n))), sparse.csc_matrix((1, k))]),
-            sparse.hstack((sparse.eye(n), sparse.csc_matrix((n, k))))
-        ], format='csc')
+    A = sparse.bmat([[F.T,             -sparse.eye(k)],
+                     [np.ones((1, n)),  None],
+                     [sparse.eye(n),    None]], format='csc')
     l = np.hstack([np.zeros(k), 1., np.zeros(n)])
     u = np.hstack([np.zeros(k), 1., np.ones(n)])
 
@@ -114,24 +112,24 @@ CVXPY
 
 .. code:: python
 
-    from cvxpy import *
+    from cvxpy import Problem, Variable, Maximize, quad_form, OSQP
     import numpy as np
     import scipy as sp
     from scipy import sparse
 
     # Generate problem data
-    sp.random.seed(1)
+    np.random.seed(1)
     n = 100
     k = 10
     F = sparse.random(n, k, density=0.7, format='csc')
     D = sparse.diags(np.random.rand(n) * np.sqrt(k), format='csc')
     mu = np.random.randn(n)
     gamma = 1
-    Sigma = F*F.T + D
+    Sigma = F@F.T + D
 
     # Define problem
     x = Variable(n)
-    objective = mu.T*x - gamma*quad_form(x, Sigma)
+    objective = mu.T@x - gamma*quad_form(x, Sigma)
     constraints = [sum(x) == 1, x >= 0]
 
     # Solve with OSQP

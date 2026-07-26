@@ -1,6 +1,6 @@
 # The Operator Splitting QP Solver
 
-[![CI](https://github.com/osqp/osqp/actions/workflows/main.yml/badge.svg)](https://github.com/osqp/osqp/actions/workflows/main.yml)
+[![Algebra: Built-in](https://github.com/osqp/osqp/actions/workflows/algebra-builtin.yml/badge.svg)](https://github.com/osqp/osqp/actions/workflows/algebra-builtin.yml)
 [![Code coverage](https://coveralls.io/repos/github/osqp/osqp/badge.svg?branch=master)](https://coveralls.io/github/osqp/osqp?branch=master)
 ![License](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg)
 
@@ -8,7 +8,7 @@
 ![PyPI - downloads](https://img.shields.io/pypi/dm/osqp.svg?label=Pypi%20downloads)
 ![Conda - downloads](https://img.shields.io/conda/dn/conda-forge/osqp.svg?label=Conda%20downloads)
 
-[**Join our forum on Discourse**](https://osqp.discourse.group) for any questions related to the solver!
+[**Visit our GitHub Discussions page**](https://github.com/orgs/osqp/discussions) for any questions related to the solver!
 
 **The documentation** is available at [**osqp.org**](https://osqp.org/)
 
@@ -39,4 +39,3 @@ Please report any issues via the [Github issue tracker](https://github.com/osqp/
 
 ## Numerical benchmarks
 Numerical benchmarks against other solvers are available [here](https://github.com/osqp/osqp_benchmarks).
-

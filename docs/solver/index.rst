@@ -130,7 +130,7 @@ The primal infeasibility check is then
 
 .. math::
 
-    \left\|A^T v \right\|_{\infty} \le \epsilon_{\rm prim\_inf}, \quad u^T v_{+} + l^T v_{-} \le \epsilon_{\rm prim\_inf}.
+    \left\|A^T v \right\|_{\infty} \le \epsilon_{\rm prim\_inf}, \quad u^T v_{+} + l^T v_{-} < 0.
 
 
 
@@ -149,7 +149,7 @@ The dual infeasibility check is then
 .. math::
 
     \| P s \|_{\infty} \le \epsilon_{\rm dual\_inf} , \quad
-    q^T s \le \epsilon_{\rm dual\_inf}, \\
+    q^T s < 0, \\
     (A s)_i \begin{cases} \in \left[-\epsilon_{\rm dual\_inf}, \epsilon_{\rm dual\_inf}\right] & u_i, l_i \in \mathbf{R}\\
     \ge -\epsilon_{\rm dual\_inf} &u_i = +\infty\\
     \le  \epsilon_{\rm dual\_inf} &l_i = -\infty.\end{cases}
@@ -175,3 +175,21 @@ The chances to have a successful polishing increase if the tolerances :code:`eps
 However, low tolerances might require a very large number of iterations.
 
 
+Implementations
+---------------
+
+The OSQP library provides a :ref:`C language implementation<c_interface>` of the above ADMM algorithm, and also
+:ref:`interfaces to several high level languages<interfaces>` to enable those languages to solve QPs using OSQP.
+
+There are also several community-developed implementations of this ADMM algorithm.
+
++----------------+----------+------------------------------------------------------------------------------------------------------------------------------+
+| Implementation | Language | Link                                                                                                                         |
++================+==========+==============================================================================================================================+
+| jaxopt.OSQP    | JAX      | `jaxopt.github.io/stable/quadratic_programming.html#osqp <https://jaxopt.github.io/stable/quadratic_programming.html#osqp>`_ |
++----------------+----------+------------------------------------------------------------------------------------------------------------------------------+
+| jOSQP          | Java     | `github.com/quantego/josqp <https://github.com/quantego/josqp>`_                                                             |
++----------------+----------+------------------------------------------------------------------------------------------------------------------------------+
+
+Note that these implementations may not have the same API or features as the OSQP library, and any questions or support requests
+should be directed to the authors of the implementations.

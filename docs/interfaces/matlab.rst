@@ -70,9 +70,9 @@ The :code:`results` structure contains the primal solution :code:`x`, the dual s
 +-----------------------+------------------------------------------------+
 | :code:`obj_val`       | Objective value                                |
 +-----------------------+------------------------------------------------+
-| :code:`pri_res`       | Primal residual                                |
+| :code:`prim_res`      | Primal residual                                |
 +-----------------------+------------------------------------------------+
-| :code:`dua_res`       | Dual residual                                  |
+| :code:`dual_res`      | Dual residual                                  |
 +-----------------------+------------------------------------------------+
 | :code:`setup_time`    | Setup time                                     |
 +-----------------------+------------------------------------------------+
@@ -116,7 +116,7 @@ The user does not have to specify all the arguments.
 Update problem matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Matrices :code:`A` and :code:`P` can be updated by changing the value of their elements but not their sparsity pattern.
-The interface is designed to mimic the :ref:`C counterpart <c_cpp_update_data>` with the Matlab 1-based indexing.
+The interface is designed to mimic the :ref:`C counterpart <c_update_data>` with the Matlab 1-based indexing.
 Note that the new values of :code:`P` represent only the upper triangular part while :code:`A` is always represented as a full matrix.
 
 You can update the values of all the elements of :code:`P` by executing

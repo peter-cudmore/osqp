@@ -1,44 +1,40 @@
 Python
 ======
 
-Python interface supports Python 2.7 and 3.5 or newer.
+Python interface supports Python 3.8 or newer.
 
 Pip
 ----
+
+Install :code:`osqp` with the *default algebra* backend using :code:`pip`:
 
 .. code:: bash
 
    pip install osqp
 
+The :code:`builtin` algebra backend is always available for use. Alternative :code:`osqp` algebra backends - :code:`mkl` or :code:`cu12` as of the time of this writing, can also be installed:
 
-Anaconda
---------
+To install :code:`osqp` with the *mkl* backend:
 
 .. code:: bash
 
-   conda install -c conda-forge osqp
+   pip install osqp[mkl]
 
+To install :code:`osqp` with the *cu12* (Cuda 12.x) backend:
 
-Sources
----------
-You need to install the following (see :ref:`build_from_sources` for more details):
+.. code:: bash
 
-- `GCC compiler <https://gcc.gnu.org/>`_
-- `CMake <https://cmake.org/>`_
+   pip install osqp[cu12]
+
+To install :code:`osqp` with the *mkl* and *cu12* backends:
+
+.. code:: bash
+
+   pip install osqp[mkl,cu12]
 
 .. note::
 
-   **Windows**: You need to install **also** the Visual Studio C++ compiler:
+   These commands install osqp with the *mkl* or *cu12* "extras", which provide the :code:`osqp-mkl` or :code:`osqp-cuda` packages respectively.
+   These extension modules are directly importable using :code:`import osqp_mkl` or :code:`import osqp_cuda`, though you will never directly need to do this.
 
-   * Python 2: `Visual C++ 9.0 for Python (VC 9.0) <https://www.microsoft.com/en-us/download/details.aspx?id=44266>`_
-
-   * Python 3: `Build Tools for Visual Studio 2017 <https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017>`_
-
-
-Now you are ready to build OSQP python interface from sources. Run the following in your terminal
-
-.. code:: bash
-
-   git clone --recurse-submodules https://github.com/osqp/osqp-python
-   cd osqp-python
-   python setup.py install
+   See :ref:`Algebra Backends -> Python <backends_python>` for more information on how to use these backends.
